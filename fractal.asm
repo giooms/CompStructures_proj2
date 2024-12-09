@@ -14,7 +14,6 @@ drawFractal:
 
     |; if sideLength is even, sideLength--
     ANDC(R3, 1, R5)       |; Using R5 for temporary calculations
-    CMPEQC(R5, 0, R5)     |; if ((sideLength & 1) == 0)
     BT(R5, skip_decrement)
     SUBC(R3, 1, R3)
 skip_decrement:
@@ -24,12 +23,12 @@ skip_decrement:
     CALL(drawSquare, 3)
 
     |; Calculate circle parameters
-    DIVC(R3, 2, R5)       |; R5 = radius = sideLength/2
-    ADD(R1, R5, R6)       |; R6 = xc
-    ADD(R2, R5, R0)       |; Use R0 temporarily for yc
-    
-    |; Draw circle and get intersection
-    PUSH(R5) PUSH(R0) PUSH(R6) |; radius, yc, xc
+    DIVC(R3, 2, R5)       |; R5 = sideLength/2 for center calculation
+    ADD(R1, R5, R6)       |; R6 = xc = xTopLeft + sideLength/2
+    ADD(R2, R5, R0)       |; R0 (temporarily) = yc = yTopLeft + sideLength/2
+
+    |; Draw circle
+    PUSH(R5) PUSH(R0) PUSH(R6)  |; radius, yc, xc
     CALL(drawCircleBres, 3)
     
     |; Calculate shift using R6 for temporary storage
