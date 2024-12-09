@@ -1,77 +1,60 @@
-|; drawFractal(xTopLeft, yTopLeft, sideLength, maxDepth)
-|; Draw a fractal using squares and circles.
-|; @param xTopLeft    the x-coordinate of the top-left corner of the current square.
-|; @param yTopLeft    the y-coordinate of the top-left corner of the current square.
-|; @param sideLength  the length of the side of the current square.
-|; @param maxDepth    the maximum depth of the fractal.
 drawFractal:
     PUSH(LP) PUSH(BP)
     MOVE(SP, BP)
-    PUSH(R1) PUSH(R2) PUSH(R3) PUSH(R4)
+    PUSH(R1) PUSH(R2) PUSH(R3) PUSH(R4) PUSH(R5) PUSH(R6) PUSH(R7) PUSH(R8) PUSH(R9)
 
-    |; Load parameters
-    LD(BP, -12, R1)         |; xTopLeft
-    LD(BP, -16, R2)         |; yTopLeft
-    LD(BP, -20, R3)         |; sideLength
-    LD(BP, -24, R4)         |; maxDepth
+    LD(BP, -12, R1)       |; xTopLeft
+    LD(BP, -16, R2)       |; yTopLeft
+    LD(BP, -20, R3)       |; sideLength
+    LD(BP, -24, R4)       |; maxDepth
 
-    |; Base case check
-    CMPEQ(R4, 0, R0)
-    BT(R0, end_fractal)
+    |; if (maxDepth == 0) return
+    CMPEQC(R4, 0, R6)
+    BT(R6, end_fractal)
 
-    |; Handle even sideLength
-    ANDC(R3, 1, R0)
-    BT(R0, skip_decrement)
+    |; if sideLength is even, sideLength--
+    ANDC(R3, 1, R6) |; sideLength & 1
+    CMPEQC(R6, 0, R6) |; if ((sideLength & 1) == 0)
+    BT(R6, skip_decrement)
     SUBC(R3, 1, R3)
 skip_decrement:
 
-    |; 1. Draw square first
-    PUSH(R3) PUSH(R2) PUSH(R1)
+    |; Draw square
+    PUSH(R3) PUSH(R2) PUSH(R1)    |; sideLength, yTopLeft, xTopLeft
     CALL(drawSquare, 3)
 
-    |; 2. Draw circle inside square
-    |; Save ALL values including maxDepth
-    PUSH(R1) PUSH(R2) PUSH(R3) PUSH(R4)  |; Save ALL values including maxDepth
-    
-    |; Calculate circle parameters
-    DIVC(R3, 2, R0)         |; radius = sideLength/2
-    ADD(R1, R0, R1)         |; xc = xTopLeft + radius
-    ADD(R2, R0, R2)         |; yc = yTopLeft + radius
-    MOVE(R0, R3)            |; R3 = radius
-    
-    |; Draw circle
-    PUSH(R3) PUSH(R2) PUSH(R1)
+    |; radius = sideLength / 2
+    DIVC(R3, 2, R6)
+    ADD(R1, R6, R8)        |; xc = xTopLeft + radius
+    ADD(R2, R6, R7)        |; yc = yTopLeft + radius
+    MOVE(R6, R5)           |; radius = sideLength/2
+
+    |; lastPixelCircleX = drawCircleBres(xc, yc, radius)
+    PUSH(R5) PUSH(R7) PUSH(R8)    |; radius, yc, xc
     CALL(drawCircleBres, 3)
-    MOVE(R0, R5)            |; Save lastPixelCircleX in R5
-    
-    |; 3. Calculate new square parameters
-    |; Restore ALL values
-    POP(R4) POP(R3) POP(R2) POP(R1)      |; Restore ALL values
-    DIVC(R3, 2, R0)          |; radius = sideLength/2
-    SUB(R0, R5, R0)          |; shift = radius - lastPixelCircleX
+    MOVE(R0, R6)
 
-    |; Check if should continue
-    CMPLTC(R0, 1, R5)
-    BT(R5, end_fractal)
+    SUB(R5, R6, R9) |; shift = radius - lastPixelCircleX
 
-    |; 4. Make recursive call with new parameters
-    PUSH(R0)                |; Save shift
-    ADD(R1, R0, R1)         |; new xTopLeft = xTopLeft + shift
-    ADD(R2, R0, R2)         |; new yTopLeft = yTopLeft + shift
-    POP(R0)                 |; Restore shift
-    SHLC(R0, 1, R0)         |; R0 = 2 * shift
-    SUB(R3, R0, R3)         |; new sideLength = sideLength - (2 * shift)
+    |; if (shift < 1) return
+    CMPLTC(R9, 1, R6)
+    BT(R6, end_fractal)
 
-    |; After shift calculation
-    SUBC(R4, 1, R4)         |; Decrement maxDepth
-    |; Don't restore R4 from earlier save, since we want to keep the decremented value
+    |; New parameters for recursive fractal
+    SUBC(R4, 1, R6)         |; maxDepth--
+    PUSH(R6)
+    SHLC(R9, 1, R6)         |; 2 * shift
+    SUB(R3, R6, R6)         |; sideLength -= 2 * shift
+    PUSH(R6)
+    ADD(R2, R9, R6)         |; yTopLeft += shift
+    PUSH(R6)
+    ADD(R1, R9, R6)         |; xTopLeft += shift
+    PUSH(R6)
 
-    |; Make recursive call with decremented maxDepth
-    PUSH(R4) PUSH(R3) PUSH(R2) PUSH(R1)
-    CALL(drawFractal, 4)
+    |; Recursive call: maxDepth, sideLength, yTopLeft, xTopLeft
+    CALL(drawFractal,4)
 
 end_fractal:
-    POP(R4) POP(R3) POP(R2) POP(R1)
+    POP(R9) POP(R8) POP(R7) POP(R6) POP(R5) POP(R4) POP(R3) POP(R2) POP(R1)
     POP(BP) POP(LP)
     RTN()
-

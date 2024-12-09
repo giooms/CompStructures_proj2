@@ -7,55 +7,63 @@
 |;                 of the last pixel placed (on one of the top right "octant"),
 |;                 i.e. the top right pixel of the circle.
 drawCircleBres:
-    | Set up stack frame
+    |; Set up stack frame
     PUSH(LP) PUSH(BP)
     MOVE(SP, BP)
-    
-    | Load arguments
+
+    PUSH(R1) PUSH(R2) PUSH(R3) PUSH(R4)
+    PUSH(R5) PUSH(R6) PUSH(R7)
+
+    |; Load arguments
     LD(BP, -12, R1)         |; xc
     LD(BP, -16, R2)         |; yc
     LD(BP, -20, R3)         |; radius
 
-    | Initialize variables
+    |; Initialize variables
+    ADDC(R31, 3, R5)        |; 3
     SHLC(R3, 1, R4)         |; 2 * radius
-    SUBC(3, R4, R5)         |; decisionVar = 3 - 2 * radius
-    CMOVE(0, R6)            |; circleX = 0
-    MOVE(R3, R7)            |; circleY = radius
+    SUB(R5, R4, R6)         |; decisionVar = 3 - 2 * radius
+    CMOVE(0, R4)            |; circleX = 0
+    MOVE(R3, R5)            |; circleY = radius
 
 loop_circle:
-    | Check loop condition: while (circleX <= circleY)
-    CMPLE(R6, R7, R8)
-    BF(R8, end_circle)
+    |; Check loop condition: while (circleX <= circleY)
+    CMPLE(R4, R5, R7)
+    BF(R7, end_circle)
 
-    | Place pixels for this step
-    PUSH(R7) PUSH(R6) PUSH(R2) PUSH(R1)
+    |; Place pixels for this step
+    PUSH(R5) PUSH(R4) PUSH(R2) PUSH(R1)
     CALL(placeCirclePixels, 4)
 
-    | Update decision variable
-    CMPLT(R31, R5, R8)        |; Changed: if (decisionVar > 0)
-    BF(R8, update_decision_low)
+    |; Update decision variable
+    CMPLT(R31, R6, R7)        |; Changed: if (decisionVar > 0)
+    BF(R7, update_decision_low)
 
-    | DecisionVar > 0 case
-    SUB(R6, R7, R8)         |; circleX - circleY
-    SHLC(R8, 2, R8)         |; 4 * (circleX - circleY)
-    ADDC(R8, 10, R8)        |; +10
-    ADD(R5, R8, R5)         |; decisionVar += ...
-    SUBC(R7, 1, R7)         |; circleY--
+    |; DecisionVar > 0 case
+    SUB(R4, R5, R7)         |; circleX - circleY
+    SHLC(R7, 2, R7)         |; 4 * (circleX - circleY)
+    ADDC(R7, 10, R7)        |; +10 (constant in Bresenham's algorithm)
+    ADD(R6, R7, R6)         |; decisionVar += ...
+    SUBC(R5, 1, R5)         |; circleY--
     BR(update_decision_done)
 
 update_decision_low:
-    | DecisionVar <= 0 case
-    SHLC(R6, 2, R8)         |; 4 * circleX
-    ADDC(R8, 6, R8)         |; +6
-    ADD(R5, R8, R5)         |; decisionVar += ...
+    |; DecisionVar <= 0 case
+    SHLC(R4, 2, R7)         |; 4 * circleX
+    ADDC(R7, 6, R7)         |; +6
+    ADD(R6, R7, R6)         |; decisionVar += ...
 
 update_decision_done:
-    ADDC(R6, 1, R6)         |; circleX++
+    ADDC(R4, 1, R4)         |; circleX++
     BR(loop_circle)
 
 end_circle:
-    | Return circleX - 1 in R0
-    SUBC(R6, 1, R0)
+    |; Return circleX - 1 in R0
+    SUBC(R4, 1, R0)
+
+    POP(R7) POP(R6) POP(R5)
+    POP(R4) POP(R3) POP(R2) POP(R1)
+
     POP(BP) POP(LP)
     RTN()
 
