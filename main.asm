@@ -34,7 +34,7 @@ STORAGE(words_per_line)      |; blank line for better visualization
 |; You can modify this value to test your drawFractal function. You can assume
 |; that maxDepth is always greater than 0.
 maxDepth:
-    LONG(3)
+    LONG(2)
 
 
 main:
